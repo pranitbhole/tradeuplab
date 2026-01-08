@@ -9,17 +9,16 @@ onMounted(() => {
   const ctx = canvasRef.value.getContext('2d')
 
   const labels = skinData.price_history.map(p => p.date)
-  const prices = skinData.price_history.map(p => p.median_price)
+  const volumes = skinData.price_history.map(p => p.volume)
 
   new Chart(ctx, {
-    type: 'line',
+    type: 'bar',
     data: {
       labels,
       datasets: [
         {
-          label: 'Median Price',
-          data: prices,
-          tension: 0.3
+          label: 'Daily Volume',
+          data: volumes
         }
       ]
     },
@@ -34,7 +33,7 @@ onMounted(() => {
         y: {
           title: {
             display: true,
-            text: `Price (${skinData.currency})`
+            text: 'Volume'
           }
         },
         x: {
@@ -50,7 +49,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div style="max-width: 700px;">
+  <div style="max-width: 600px;">
     <canvas ref="canvasRef"></canvas>
   </div>
 </template>
