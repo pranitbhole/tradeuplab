@@ -1,63 +1,110 @@
 <script setup>
+import { ref, onMounted } from 'vue'
+import { useMotion } from '@vueuse/motion'
+import BaseCard from './BaseCard.vue'
 import skinData from '../mock/skin_sample.json'
 
-// ---- MOCK trade-up calculation (frontend only) ----
-
-// Cost to perform trade-up (10 inputs)
+// --- Mock EV calculation ---
 const tradeUpCost = 10 * skinData.price_stats.current_price
 
-// Simulated outputs (later comes from backend)
 const outcomes = [
-  { name: 'AK-47 | Vulcan', price: 42, probability: 0.25 },
-  { name: 'M4A4 | Asiimov', price: 38, probability: 0.25 },
-  { name: 'AWP | Redline', price: 34, probability: 0.25 },
-  { name: 'FAMAS | Pulse', price: 18, probability: 0.25 }
+  { price: 42, probability: 0.25 },
+  { price: 38, probability: 0.25 },
+  { price: 34, probability: 0.25 },
+  { price: 18, probability: 0.25 }
 ]
 
-// Expected value
 const expectedReturn = outcomes.reduce(
   (sum, o) => sum + o.price * o.probability,
   0
 )
 
 const ev = expectedReturn - tradeUpCost
+const isPositive = ev > 0
 
-const evLabel = ev > 0 ? 'Positive EV' : 'Negative EV'
-const evColor = ev > 0 ? '#2ecc71' : '#e74c3c'
+// Motion ref for EV emphasis
+const evRef = ref(null)
+
+onMounted(() => {
+  useMotion(evRef, {
+    initial: {
+      opacity: 0,
+      y: 6
+    },
+    enter: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 250,
+        ease: 'easeOut'
+      }
+    }
+  })
+})
 </script>
 
 <template>
-  <div
-    style="
-      border: 1px solid #ddd;
-      padding: 16px;
-      border-radius: 8px;
-      max-width: 320px;
-    "
+  <BaseCard
+    :class="isPositive ? 'border-green-500' : 'border-red-500'"
   >
-    <h3 style="margin-bottom: 10px;">Trade-Up EV</h3>
+    <!-- Title -->
+    <h3 class="text-xl font-semibold mb-3">
+      Trade-Up Expected Value
+    </h3>
 
-    <div style="font-size: 14px; margin-bottom: 8px;">
-      <strong>Cost:</strong>
-      {{ tradeUpCost.toFixed(2) }} {{ skinData.currency }}
-    </div>
-
-    <div style="font-size: 14px; margin-bottom: 8px;">
-      <strong>Expected Return:</strong>
-      {{ expectedReturn.toFixed(2) }} {{ skinData.currency }}
-    </div>
-
+    <!-- EV RESULT (Animated) -->
     <div
-      style="font-size: 18px; font-weight: bold;"
-      :style="{ color: evColor }"
+      ref="evRef"
+      class="text-2xl font-bold mb-2"
+      :class="isPositive ? 'text-green-400' : 'text-red-400'"
     >
-      {{ evLabel }} ({{ ev.toFixed(2) }} {{ skinData.currency }})
+      {{ isPositive ? 'Positive EV' : 'Negative EV' }}
+      ({{ ev.toFixed(2) }} {{ skinData.currency }})
     </div>
 
-    <div style="font-size: 12px; margin-top: 10px; color: #555;">
-      Demand Score: {{ skinData.tradeup_profile.tradeup_demand_score }}
-      <br />
+    <!-- Numbers -->
+    <div class="text-sm text-gray-300 space-y-1 mb-4">
+      <div>
+        Cost:
+        <span class="font-medium">
+          {{ tradeUpCost.toFixed(2) }} {{ skinData.currency }}
+        </span>
+      </div>
+      <div>
+        Expected Return:
+        <span class="font-medium">
+          {{ expectedReturn.toFixed(2) }} {{ skinData.currency }}
+        </span>
+      </div>
+    </div>
+
+    <!-- WHY BLOCK -->
+    <div
+      class="text-sm rounded-lg p-3"
+      :class="isPositive
+        ? 'bg-green-500/10 text-green-300'
+        : 'bg-red-500/10 text-red-300'"
+    >
+      <p class="font-semibold mb-1">Why?</p>
+      <ul class="list-disc list-inside space-y-1">
+        <li>
+          {{ isPositive
+            ? 'Expected return exceeds input cost'
+            : 'Expected return is lower than input cost' }}
+        </li>
+        <li>
+          Risk level: {{ skinData.risk.risk_level }}
+        </li>
+        <li>
+          Liquidity: {{ skinData.liquidity.liquidity_label }}
+        </li>
+      </ul>
+    </div>
+
+    <!-- Meta -->
+    <div class="text-xs text-gray-400 mt-3">
+      Demand Score: {{ skinData.tradeup_profile.tradeup_demand_score }} ·
       EV Sensitivity: {{ skinData.tradeup_profile.ev_sensitivity }}
     </div>
-  </div>
+  </BaseCard>
 </template>
