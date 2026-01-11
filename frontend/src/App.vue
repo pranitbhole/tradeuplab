@@ -1,42 +1,61 @@
 <script setup>
-import PriceChart from './components/PriceChart.vue'
-import VolumeChart from './components/VolumeChart.vue'
-import LiquidityScore from './components/LiquidityScore.vue'
-import VolatilityMeter from './components/VolatilityMeter.vue'
-import TradeUpEV from './components/TradeUpEV.vue'
-import skinData from './mock/skin_sample.json'
-import MarketHealth from './components/MarketHealth.vue'
+import { ref, onMounted } from 'vue'
+import { fetchSkinAnalytics } from './services/api'
 
+import LiquidityScore from './components/LiquidityScore.vue'
+import RiskMeter from './components/VolatilityMeter.vue'
+import TradeUpEV from './components/TradeUpEV.vue'
+import TradeUpSimulator from './components/TradeUpSimulator.vue'
+
+const skinName = 'AK-47 | Redline (Field-Tested)'
+
+const analytics = ref(null)
+const loading = ref(true)
+const error = ref(null)
+
+onMounted(async () => {
+  try {
+    analytics.value = await fetchSkinAnalytics(skinName)
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <template>
   <div class="min-h-screen bg-neutral-900 text-white p-8">
-    <!-- Header -->
-    <header class="mb-8">
-      <h1 class="text-4xl font-bold mb-2">TradeUpLab</h1>
-      <h2 class="text-xl text-gray-300">
-        {{ skinData.skin_name }}
-      </h2>
-      <p class="mt-2 text-lg">
-        <span class="font-semibold">Current Price:</span>
-        {{ skinData.price_stats.current_price }} {{ skinData.currency }}
-      </p>
-    </header>
+    <h1 class="text-3xl font-bold mb-2 text-center">
+      TradeUpLab
+    </h1>
 
-    <!-- Dashboard Grid -->
-    <section class="grid grid-cols-12 gap-8">
-      <!-- Charts Section -->
-      <div class="col-span-8 space-y-6">
-        <PriceChart />
-        <VolumeChart />
-      </div>
+    <h2 class="text-xl mb-6 text-center text-gray-300">
+      {{ skinName }}
+    </h2>
 
-      <!-- Insights Section -->
-      <aside class="col-span-4 space-y-6">
-  <MarketHealth />
-  <TradeUpEV />
-</aside>
+    <div v-if="loading" class="text-gray-400 text-center">
+      Loading analytics…
+    </div>
 
-    </section>
+    <div v-else-if="error" class="text-red-400 text-center">
+      {{ error }}
+    </div>
+
+    <div
+      v-else
+      class="max-w-md mx-auto space-y-6"
+    >
+      <!-- Analytics Cards -->
+      <LiquidityScore :data="analytics.liquidity" />
+      <RiskMeter :data="analytics.risk" />
+      <TradeUpEV
+        :risk="analytics.risk"
+        :liquidity="analytics.liquidity"
+      />
+
+      <!-- Trade-Up Simulator -->
+      <TradeUpSimulator />
+    </div>
   </div>
 </template>
